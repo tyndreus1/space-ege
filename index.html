@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b14" />
+    <title>Keşif Yörüngesi · BİLSEM Güneş Sistemi</title>
+    <meta name="description" content="BİLSEM öğrencileri için 3B etkileşimli Güneş Sistemi keşif uygulaması." />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="labels"></div>
+
+    <div id="ui">
+      <header class="topbar">
+        <div class="brand">
+          <p>BİLSEM · 3B gök laboratuvarı</p>
+          <h1>Keşif Yörüngesi</h1>
+        </div>
+        <div class="mode-bar">
+          <button type="button" id="btn-hangar">Hangar</button>
+          <button type="button" id="btn-missions">Görevler</button>
+          <button type="button" id="btn-scale">Gerçekçi ölçek</button>
+          <button type="button" id="btn-stars">Yıldızlararası</button>
+          <button type="button" id="btn-help">Yardım</button>
+        </div>
+        <div class="time-control" id="time-control">
+          <div class="time-head">
+            <label for="time-speed">Zaman Hızı</label>
+            <button type="button" id="btn-pause">Duraklat</button>
+          </div>
+          <input
+            id="time-speed"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value="21"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label="Zaman hızı kaydırıcısı"
+          />
+          <div class="time-ticks" aria-hidden="true">
+            <span>Duraklat</span>
+            <span>Yavaş</span>
+            <span>1 gün/s</span>
+            <span>Hızlı</span>
+          </div>
+          <p id="time-readout">1 saniye = 0,2 gün  ·  ≈ 5 saat</p>
+        </div>
+        <div id="scale-banner"></div>
+        <div id="hint">Bir gezegene dokunun: keşif aracı oraya uçar, kamera onu izler.</div>
+      </header>
+
+      <aside id="info-panel" class="hidden" aria-live="polite"></aside>
+
+      <aside id="cockpit" class="cockpit hidden" aria-live="polite"></aside>
+
+      <div id="cockpit-frame" class="cockpit-frame hidden" aria-hidden="true">
+        <div class="cf-pillar left"></div>
+        <div class="cf-pillar right"></div>
+        <div class="cf-canopy"></div>
+        <div class="cf-dash">
+          <div class="cf-gauges">
+            <span>MK-12 KOKPİT</span>
+            <span id="cf-speed">Hız —</span>
+            <span id="cf-thr">İtki —</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="flight-hud" class="flight-hud hidden">
+        <div class="hud-chip"><span>Hız</span><strong id="hud-speed">0</strong></div>
+        <div class="hud-chip" id="hud-land-wrap"><span>İniş hızı</span><strong id="hud-land">uygun</strong></div>
+        <div class="hud-chip"><span>İrtifa*</span><strong id="hud-alt">0 km</strong></div>
+        <div class="hud-chip" id="hud-fuel-wrap">
+          <span id="hud-fuel-label">Yakıt</span>
+          <div class="track"><i id="hud-fuel-bar"></i></div>
+        </div>
+        <div class="hud-chip throttle-chip">
+          <label for="throttle-level">İtki seviyesi</label>
+          <input id="throttle-level" type="range" min="1" max="5" step="1" value="3" aria-label="İtki seviyesi" />
+          <strong id="hud-throttle">Orta · 3/5</strong>
+        </div>
+        <div class="hud-chip wide"><span>Hedef</span><strong id="hud-target">—</strong></div>
+        <div class="hud-chip"><span>Araç</span><strong id="hud-stage">—</strong></div>
+        <button type="button" class="hud-chip hud-btn" id="btn-hud-cam">Kokpit görünümü</button>
+      </div>
+
+      <div id="guide-arrow" class="guide-arrow hidden" aria-hidden="true">▲</div>
+      <div id="countdown" class="countdown hidden"></div>
+      <div id="badge-toast" class="badge-toast hidden"></div>
+
+      <div id="touch-controls" class="touch-controls hidden">
+        <div id="stick" class="stick" aria-label="Yön kolu"><i></i></div>
+        <div class="touch-btns">
+          <button type="button" id="btn-thrust">İtki</button>
+          <button type="button" id="btn-brake">Fren</button>
+          <button type="button" id="btn-boost">Takviye</button>
+          <button type="button" id="btn-auto">Oto-pilot</button>
+          <button type="button" id="btn-cruise">Seyir</button>
+          <button type="button" id="btn-cockpit-cam">Kokpit</button>
+          <button type="button" id="btn-thr-down">İtki −</button>
+          <button type="button" id="btn-thr-up">İtki +</button>
+          <button type="button" id="btn-touch-hangar">Hangar</button>
+        </div>
+      </div>
+
+      <aside id="missions-drawer" class="missions-drawer hidden">
+        <h3>Görevler</h3>
+        <div id="mission-board-live"></div>
+      </aside>
+
+      <nav id="planet-dock" class="planet-dock" aria-label="Gezegenler"></nav>
+      <nav id="star-dock" class="star-dock hidden" aria-label="Yakın yıldızlar"></nav>
+
+      <div id="hangar" class="hangar hidden">
+        <div class="hangar-inner">
+          <header class="hangar-top">
+            <div>
+              <p class="kicker">BİLSEM fırlatma hangarı</p>
+              <h2>Fırlatıcı seç</h2>
+            </div>
+            <div class="hangar-settings">
+              <label class="chk"><input type="checkbox" id="chk-fuel" /> Yakıt ve yörünge meydan okuması</label>
+              <button type="button" id="btn-auto-mode">Otomatik uçuş: kapalı</button>
+              <button type="button" id="btn-reset-progress" class="ghost">İlerlemeyi sil</button>
+            </div>
+          </header>
+          <p id="fuel-hint" class="fuel-hint hidden">Yakıt açık: itki yakıt yer. Hohmann aktarımı (iki yörüngeye teğet elips) ve kütleçekim sapanı gerçek görevlerde yakıtı azaltır. Bitince görev düşer — tekrar dene.</p>
+          <div class="hangar-grid">
+            <div>
+              <canvas id="hangar-view" width="480" height="320" aria-label="Fırlatıcı önizleme"></canvas>
+              <div id="hangar-list" class="hangar-list"></div>
+            </div>
+            <div>
+              <div id="hangar-sheet"></div>
+              <h3 class="mission-h">Görev kartları</h3>
+              <div id="mission-board"></div>
+              <button type="button" id="hangar-launch" class="primary-go">Rampaya çık</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="welcome" class="overlay-card">
+        <article>
+          <p class="kicker" style="color:#ffc857;letter-spacing:.14em;text-transform:uppercase;font-size:11px;margin:0">BİLSEM fırlatma kulesi</p>
+          <h2>Roket hangarına hoş geldiniz</h2>
+          <p>Tarihî fırlatıcılarla Güneş Sistemi’ni sen uçurursun. Hangardan bir roket seç, göreve çık, mekik bilgisayarı hedef gezegeni tarar.</p>
+          <ul>
+            <li>W itki · S / Boşluk fren · A/D ve oklar yön · Q/E itki seviyesi</li>
+            <li>V kokpit kamerası · F oto-pilot · C seyir · Shift takviye</li>
+            <li>Tablette sol kol + Fren / İtki / Kokpit düğmeleri</li>
+            <li>Hedefe yavaş yaklaş; Güneş ve yanlış cisim çarpışması görevi düşürür</li>
+          </ul>
+          <button type="button" id="welcome-go">Hangara gir</button>
+        </article>
+      </div>
+
+      <div id="fail-card" class="overlay-card hidden">
+        <article>
+          <p class="kicker" style="color:#ff8b7a;letter-spacing:.14em;text-transform:uppercase;font-size:11px;margin:0">Görev düştü</p>
+          <h2>Görev Başarısız</h2>
+          <p id="fail-reason">Çarpışma.</p>
+          <p id="fail-hint" class="muted"></p>
+          <button type="button" id="fail-retry">Yeniden dene</button>
+        </article>
+      </div>
+
+      <div id="success-card" class="overlay-card hidden">
+        <article>
+          <p class="kicker" style="color:#4ade80;letter-spacing:.14em;text-transform:uppercase;font-size:11px;margin:0">Görev tamam</p>
+          <h2>Görev Başarılı</h2>
+          <p id="success-title"></p>
+          <p id="success-detail"></p>
+          <div id="success-mission"></div>
+          <button type="button" id="success-hangar" class="primary-go">Hangara dön</button>
+          <button type="button" id="success-continue">Uçuşa devam</button>
+        </article>
+      </div>
+
+      <div id="help-card" class="overlay-card hidden">
+        <article>
+          <h2>Nasıl çalışır?</h2>
+          <p><strong>Pilot:</strong> gezegene dokun → geri sayım → sen uçurursun. İtki seviyesi ve frenle yavaşla; hedefe yumuşak in (gaz devlerinde yörüngeye otur). Mekik ekranı yaklaştıkça veri açar.</p>
+          <p><strong>Otomatik uçuş:</strong> hangardan açılır; eski sinema uçuşu ve sağ bilgi paneli.</p>
+          <p><kbd>W</kbd> itki, <kbd>S</kbd>/<kbd>Boşluk</kbd> fren, <kbd>Q</kbd><kbd>E</kbd> itki seviyesi, <kbd>V</kbd> kokpit, <kbd>A</kbd><kbd>D</kbd> sapma, <kbd>oklar</kbd> yunuslama, <kbd>Shift</kbd> takviye, <kbd>F</kbd> oto-pilot, <kbd>C</kbd> seyir.</p>
+          <p>Veriler NASA Planetary Fact Sheet. Fırlatıcı sayıları ajans veri sayfalarındandır. DeltaV UFS bir tasarım hedefidir.</p>
+          <button type="button" id="help-close">Kapat</button>
+        </article>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
