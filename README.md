@@ -147,4 +147,4 @@ Yörünge konumu Kepler denklemiyle bulunur: \(M = E - e\sin E\). Newton yinelem
 
 Konsoldan deneme: `window.__kesif.flyToPlanet('jupiter')` (otomatik uçuş) veya `window.__kesif.demoPilot({ to: 'mars', approach: 0.6 })`.
 
-Fırlatıcı `game.*` alanları eğitsel “his”tir (ivme, dönüş, yakıt); Tsiolkovsky denklemi veya Hohmann Δv hesaplanmaz. Sınıfta “neden oyun ile görev farklı?” sorusu için uygundur.
+Fırlatıcı `game.*` alanları eğitimsel “his”tir (ivme, dönüş, yakıt); Tsiolkovsky denklemi veya Hohmann Δv hesaplanmaz. Sınıfta “neden oyun ile görev farklı?” sorusu için uygundur.
